@@ -1,0 +1,3 @@
+# view AndroidManifest.xml #generated:6
+-keep class gatech.haker5.smoothit.CordovaApp { <init>(...); }
+
