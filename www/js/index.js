@@ -59,7 +59,6 @@ var googleapi = {
 
 $(document).on('deviceready', function() {
     var $loginButton = $('#login a');
-    var $loginStatus = $('#login p');
 
     $loginButton.on('click', function() {
         googleapi.authorize({
@@ -68,9 +67,9 @@ $(document).on('deviceready', function() {
             redirect_uri: 'http://localhost',
             scope: 'https://www.googleapis.com/auth/calendar'
         }).done(function(data) {
-            //$loginButton.hide();
+            $(':mobile-pagecontainer').pagecontainer('change', '#p2');
             $.ajax(
-                'https://www.googleapis.com/calendar/v3/users/me/calendarList/raychien1025@gmail.com',
+                'https://www.googleapis.com/calendar/v3/calendars/raychien1025@gmail.com/events',
                 {
                   type: 'GET',
                   dataType: 'json',
@@ -78,14 +77,29 @@ $(document).on('deviceready', function() {
                     'Authorization': 'Bearer ' + data.access_token
                   },
                   success: function (resp) {
-                    $loginStatus.html(resp.id);
+                    $('#event-list li').remove();
+                    var list = resp.items;
+                    $.each(list, function(i, e) {
+                        var StartDateTime = e.start.dateTime.split(/\T(\d{2}\:\d{2})/);
+                        var EndDateTime = e.end.dateTime.split(/\T(\d{2}\:\d{2})/);
+                        $('#event-list').append(
+                            '<li><h4>' + e.summary + '</h4>'
+                            + '<p>' + e.location + '</p>'
+                            + '<p>' + StartDateTime[1] + ' - ' + EndDateTime[1] + '</p>'
+                            + '<p class="ui-li-aside">' + StartDateTime[0] + '</p></li>'
+                        );
+                    });
+                    $('#event-list').listview('refresh');
+                    setTimeout(function(){ 
+                        $('#alert-event').append('There is an traffic jam on event "' + list[0].summary + '".');
+                        $(':mobile-pagecontainer').pagecontainer('change', '#p3');
+                    }, 3000);
                   },
                   error: function (jqXHR, textStatus, errorThrown) {
                     $loginStatus.html(textStatus);
                   }
                 }
             );
-            //$loginStatus.html('Access Token: ' + data.access_token);
         }).fail(function(data) {
             $loginStatus.html(data.error);
         });

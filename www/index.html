@@ -1,21 +1,54 @@
 <!DOCTYPE html>
 <html>
-    <head>
-        <meta charset="utf-8" />
-        <meta name="format-detection" content="telephone=no" />
-        <meta name="viewport" content="user-scalable=no, initial-scale=1, maximum-scale=1, minimum-scale=1, width=device-width, height=device-height, target-densitydpi=device-dpi" />
-        <link rel="stylesheet" type="text/css" href="css/index.css" />
-        <title>Google OAuth with PhoneGap</title>
-    </head>
-    <body>
-        <div class="app">
-            <div id="login">
-                <a>Sign In With Google!</a>
-                <p></p>
-            </div>
+  <head>
+    <title>Google OAuth with PhoneGap</title>
+    <meta charset="utf-8" />
+    <meta name="format-detection" content="telephone=no" />
+    <meta name="viewport" content="initial-scale=1, width=device-width" />
+    <link rel="stylesheet" type="text/css" href="css/jquery.mobile-1.4.5.min.css" />
+    <script type="text/javascript" src="cordova.js"></script>
+    <script type="text/javascript" src="js/jquery-1.11.2.min.js"></script>
+    <script type="text/javascript" src="js/jquery.mobile-1.4.5.min.js"></script>
+    <script type="text/javascript" src="js/index.js"></script>
+  </head>
+  <body>
+    <!-- Page 1 -->
+    <div data-role="page" data-theme="b" id="p1">
+      <div data-role="header" data-position="fixed">
+        <h1>Smooth'it</h1>
+      </div>
+      <div data-role="content">
+        <div id="login">
+          <a class="ui-btn ui-btn-inline" id='login-btn'>Sign In With Google!</a>
         </div>
-        <script type="text/javascript" src="cordova.js"></script>
-        <script type="text/javascript" src="js/jquery-1.11.2.min.js"></script>
-        <script type="text/javascript" src="js/index.js"></script>
-    </body>
+      </div>
+      <div data-role="footer" data-position="fixed">
+        <h1>GT Hacker5</h1>
+      </div>
+    </div>
+    <!-- Page 2 -->
+    <div data-role="page" data-theme="b" id="p2">
+      <div data-role="header" data-position="fixed">
+        <h1>Event List</h1>
+      </div>
+      <div data-role="content">
+        <div data-role="content">
+            <ul id="event-list" data-role="listview" data-filter="true"></ul>
+        </div>
+      </div>
+      <div data-role="footer" data-position="fixed">
+        <h1>GT Hacker5</h1>
+      </div>
+    </div>
+    <!-- Page 3 -->
+    <div data-role="page" data-dialog="true" id="p3">
+      <div data-role="header" data-theme="b" role="banner" class="ui-header ui-bar-b">
+        <h1 class="ui-title" role="heading" aria-level="1">Alert</h1>
+      </div>
+      <div role="main" class="ui-content">
+        <h1>Traffic Jam!</h1>
+        <p id="alert-event"></p>
+      </div>
+    </div>
+  </body>
 </html>
