@@ -1,107 +1,109 @@
-var googleapi = {
-    authorize: function(options) {
-        var deferred = $.Deferred();
+var clientId = '656534411560-adakgaficm4bb64i3q4hotm43es740uh.apps.googleusercontent.com';
+var apiKey = 'AIzaSyA3NRYUuDsgS1M-sZRkFwzhl3FHfgcihXo';
+var scopes = 'https://www.googleapis.com/auth/calendar';
 
-        //Build the OAuth consent page URL
-        var authUrl = 'https://accounts.google.com/o/oauth2/auth?' + $.param({
-            client_id: options.client_id,
-            redirect_uri: options.redirect_uri,
-            response_type: 'code',
-            scope: options.scope
-        });
+function handleClientLoad() {
+    gapi.client.setApiKey(apiKey);
+    window.setTimeout(checkAuth,1);
+}
 
-        //Open the OAuth consent page in the InAppBrowser
-        var authWindow = window.open(authUrl, '_blank', 'location=no,toolbar=no');
+function checkAuth() {
+    gapi.auth.authorize({client_id: clientId, scope: scopes, immediate: true}, handleAuthResult);
+}
 
-        //The recommendation is to use the redirect_uri "urn:ietf:wg:oauth:2.0:oob"
-        //which sets the authorization code in the browser's title. However, we can't
-        //access the title of the InAppBrowser.
-        //
-        //Instead, we pass a bogus redirect_uri of "http://localhost", which means the
-        //authorization code will get set in the url. We can access the url in the
-        //loadstart and loadstop events. So if we bind the loadstart event, we can
-        //find the authorization code and close the InAppBrowser after the user
-        //has granted us access to their data.
-        $(authWindow).on('loadstart', function(e) {
-            var url = e.originalEvent.url;
-            var code = /\?code=(.+)$/.exec(url);
-            var error = /\?error=(.+)$/.exec(url);
-
-            if (code || error) {
-                //Always close the browser when match is found
-                authWindow.close();
-            }
-
-            if (code) {
-                //Exchange the authorization code for an access token
-                $.post('https://accounts.google.com/o/oauth2/token', {
-                    code: code[1],
-                    client_id: options.client_id,
-                    client_secret: options.client_secret,
-                    redirect_uri: options.redirect_uri,
-                    grant_type: 'authorization_code'
-                }).done(function(data) {
-                    deferred.resolve(data);
-                }).fail(function(response) {
-                    deferred.reject(response.responseJSON);
-                });
-            } else if (error) {
-                //The user denied access to the app
-                deferred.reject({
-                    error: error[1]
-                });
-            }
-        });
-
-        return deferred.promise();
-    }
-};
-
-$(document).on('deviceready', function() {
-    var $loginButton = $('#login a');
-
-    $loginButton.on('click', function() {
-        googleapi.authorize({
-            client_id: '656534411560-nvp2q0ambtajjlosk9bi5dijjkmaifae.apps.googleusercontent.com',
-            client_secret: 'miFdeYaKxq1hsbBdql7-KRJP',
-            redirect_uri: 'http://localhost',
-            scope: 'https://www.googleapis.com/auth/calendar'
-        }).done(function(data) {
-            $(':mobile-pagecontainer').pagecontainer('change', '#p2');
+function handleAuthResult(authResult) {
+    var $loginStatus = $('#input p');
+    var authorizeButton = $('#login-btn');
+    var calendar_id = null;
+    if (authResult && !authResult.error) {
+        $(':mobile-pagecontainer').pagecontainer('change', '#p2');
+        $.ajax(
+            'https://www.googleapis.com/calendar/v3/users/me/calendarList',
+            {
+                async:   false, 
+                type: 'GET',
+                dataType: 'json',
+                headers: {
+                    'Authorization': 'Bearer ' + authResult.access_token
+                },
+                success: function (resp) {
+                    var list = resp.items;
+                    $.each(list, function(i, e) {
+                        //console.log(e.accessRole + ' ' + e.id + ' ' + e.kind);
+                        if (e.accessRole === 'owner') calendar_id = e.id;
+                    });
+                }
+            }                
+        );
+        var current_date = new Date();
+        var time_min = current_date.toISOString();
+        var end_date = new Date();
+        end_date.setDate(current_date.getDate()+30);
+        var time_max = end_date.toISOString();
+        console.log("calendar_id: " + calendar_id );
+        console.log(time_min + " " + time_max);
+        if (calendar_id !== null) {
             $.ajax(
-                'https://www.googleapis.com/calendar/v3/calendars/raychien1025@gmail.com/events',
+                'https://www.googleapis.com/calendar/v3/calendars/' + calendar_id + '/events',
                 {
                   type: 'GET',
                   dataType: 'json',
+                  data: {
+                    'timeMin' : time_min,
+                    'timeMax' : time_max
+                  },
                   headers: {
-                    'Authorization': 'Bearer ' + data.access_token
+                    'Authorization': 'Bearer ' + authResult.access_token
                   },
                   success: function (resp) {
                     $('#event-list li').remove();
                     var list = resp.items;
+                    var cnt = 0;
                     $.each(list, function(i, e) {
                         var StartDateTime = e.start.dateTime.split(/\T(\d{2}\:\d{2})/);
                         var EndDateTime = e.end.dateTime.split(/\T(\d{2}\:\d{2})/);
+                        ++cnt;
+                        var button_id = 'event-' + cnt;
                         $('#event-list').append(
-                            '<li><h4>' + e.summary + '</h4>'
+                            '<li><a class=\"ui-btn ui-btn-inline\" id=\"' + button_id + '\"> <h4>' + e.summary + '</h4>'
                             + '<p>' + e.location + '</p>'
                             + '<p>' + StartDateTime[1] + ' - ' + EndDateTime[1] + '</p>'
-                            + '<p class="ui-li-aside">' + StartDateTime[0] + '</p></li>'
+                            + '<p class="ui-li-aside">' + StartDateTime[0] + '</p></a></li>'
                         );
+                        $('#'+button_id).on('click', function(e) {
+                            console.log(e.id);
+                            $('#alert-event').append('There is an traffic jam on event "' + list[0].summary + '".');
+                            $(':mobile-pagecontainer').pagecontainer('change', '#p3');
+                        });
                     });
                     $('#event-list').listview('refresh');
-                    setTimeout(function(){ 
+                    /*setTimeout(function(){ 
                         $('#alert-event').append('There is an traffic jam on event "' + list[0].summary + '".');
                         $(':mobile-pagecontainer').pagecontainer('change', '#p3');
-                    }, 3000);
+                    }, 30000);*/
                   },
                   error: function (jqXHR, textStatus, errorThrown) {
                     $loginStatus.html(textStatus);
                   }
                 }
             );
-        }).fail(function(data) {
-            $loginStatus.html(data.error);
-        });
+        }
+    } else {
+        $loginStatus.html('access denied.');
+        $(':mobile-pagecontainer').pagecontainer('change', '#p2');
+    }
+}
+
+function handleAuthClick(event) {
+    gapi.auth.authorize({client_id: clientId, scope: scopes, immediate: false}, handleAuthResult);
+    return false;
+}
+
+$(document).on('ready', function() {
+    var $loginButton = $('#login a');
+    var $loginStatus = $('#input p');
+
+    $loginButton.on('click', function(e) {
+        handleAuthClick(e);
     });
 });
